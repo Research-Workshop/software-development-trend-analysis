@@ -1,3 +1,4 @@
+#!/usr/bin/bash
 ################################ GLOBALS ################################
 __args=()
 __args_i=0
@@ -83,8 +84,8 @@ sonarqube_analysis() {
 
   local cwd=$(pwd)
   cd "$src"
-	git checkout $tag
-	sh $ext $key $src $tag $url $token
+  git checkout $tag
+  bash "$ext" "$key" "$src" "$tag" "$url" "$token"
   cd "$cwd"
 }
 

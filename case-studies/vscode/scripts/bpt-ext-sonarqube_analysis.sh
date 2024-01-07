@@ -9,6 +9,6 @@ sonar-scanner \
   -Dsonar.projectKey=$key \
   -Dsonar.projectVersion=$version \
   -Dsonar.exclusions="**/*.test.js,**/*.test.ts" \
-  -Dsonar.sources="$src" \
+  -Dsonar.sources=$src \
   -Dsonar.host.url=$url \
   -Dsonar.login=$token

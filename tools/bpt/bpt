@@ -1,0 +1,166 @@
+################################ GLOBALS ################################
+__args=()
+__args_i=0
+__func=""
+declare -A __context_args
+declare -A __func_args
+
+################################ LOG ##################################
+log() {
+  echo -e "\e[34m[LOG]\e[0m\t[${FUNCNAME[1]}]\t" "$@"
+}
+
+debug() {
+  echo -e "\e[32m[DEBUG]\e[0m\t[${FUNCNAME[1]}]\t" "$@"
+}
+
+warn() {
+  echo -e "\e[33m[WARN]\e[0m\t[${FUNCNAME[1]}]\t" "$@"
+}
+
+error() {
+  echo -e "\e[31m[ERROR]\e[0m\t[${FUNCNAME[1]}]\t" "$@"
+}
+
+label() {
+  echo -e "################################ $1 ################################"
+}
+
+LOG_LEVEL=debug
+case $LOG_LEVEL in
+debug)
+  alias log=':'
+  ;;
+log)
+  alias debug=':'
+  ;;
+off)
+  alias log=':'
+  alias debug=':'
+  ;;
+esac
+
+################################ FUNCTIONS ################################
+commits() {
+  local src="${__func_args[src]}"
+  local branch="${__func_args[branch]}"
+  local output="${__func_args[output]}"
+  local cwd=$(pwd)
+
+  cd "$src"
+  git log --reverse --pretty=format:"%H,%ae,%ai,%P" "$branch" > "$output"
+  cd "$cwd"
+}
+
+commit_messages() {
+  local src="${__func_args[src]}"
+  local branch="${__func_args[branch]}"
+  local output="${__func_args[output]}"
+  local cwd=$(pwd)
+
+  cd "$src"
+  git log --reverse --pretty=format:"%H***===***%s***===***%b:::===:::" "$branch" > "$output"
+  cd "$cwd"
+}
+
+tags() {
+  local src="${__func_args[src]}"
+  local output="${__func_args[output]}"
+  local cwd=$(pwd)
+
+  cd "$src"
+  git tag > "$output"
+  cd "$cwd"
+}
+
+sonarqube_analysis() {
+  local src="${__func_args[src]}"
+  local tag="${__func_args[tag]}"
+  local key="${__func_args[key]}"
+  local url="${__func_args[url]}"
+  local token="${__func_args[token]}"
+  local ext="${__func_args[ext]}"
+
+  local cwd=$(pwd)
+  cd "$src"
+	git checkout $tag
+	sh $ext $key $src $tag $url $token
+  cd "$cwd"
+}
+
+################################ HELPERS ################################
+: '
+Captures all the arguments that are passed to current function
+and stores them in an associative array __func_args
+'
+capture_func_args() {
+  __func_args=()
+  for (( ; __args_i < ${#__args[@]}; ++__args_i)); do
+    local arg="${__args[$__args_i]}"
+    debug "arg: $arg"
+    if [[ "$arg" == -* ]]; then
+      if [[ "$arg" == *"="* ]]; then
+        local key="${arg%%=*}"
+        key="${key#-}"
+        local value="${arg#*=}"
+        __func_args["$key"]="$value"
+      else
+        local key="$arg"
+        key="${key#-}"
+        __func_args["$key"]=true
+      fi
+    else
+      break
+    fi
+  done
+}
+
+copy_to_context_args() {
+  for key in "${!__func_args[@]}"; do
+    __context_args["$key"]="${__func_args[$key]}"
+  done
+}
+
+################################ MAIN ################################
+main() {
+  # capture all the arguments in an array
+  __args=("$@")
+  # capture context arguments
+  capture_func_args
+  copy_to_context_args
+
+  # for each argument, check if it's a valid function
+  for (( ; __args_i < ${#__args[@]}; )); do
+    local arg="${__args[$__args_i]}"
+    __args_i=$((__args_i + 1))
+    if [ "$(type -t "$arg")" == "function" ]; then
+      # if it's a valid function
+      __func="$arg"
+      capture_func_args
+      debug "__func: $__func"
+      debug "__func_args_keys:" "${!__func_args[@]}"
+      debug "__func_args_values:" "${__func_args[@]}"
+
+      label "$__func"
+      # if function name starts with _, call the function with the arguments
+      if [[ "$__func" == _* ]]; then
+        "$__func" "${__func_args[@]}"
+        continue
+      fi
+      "$__func" "${__func_args[@]}"
+    else
+      # if it's not a valid function, print error message
+      error "Invalid function: $arg"
+      capture_func_args
+      warn "Skipping:"
+      warn "__func_args_keys:" "${!__func_args[@]}"
+      warn "__func_args_values:" "${__func_args[@]}"
+    fi
+  done
+
+  echo
+  debug "__context_args_keys:" "${!__context_args[@]}"
+  debug "__context_args_values:" "${__context_args[@]}"
+}
+
+main "$@"

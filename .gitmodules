@@ -1,0 +1,3 @@
+[submodule "tools/sonarqube-metrics-collector"]
+	path = tools/sonarqube-metrics-collector
+	url = git@github.com:Research-Workshop/sonarqube-metrics-collector.git

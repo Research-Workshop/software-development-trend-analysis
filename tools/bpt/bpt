@@ -70,22 +70,36 @@ tags() {
   local cwd=$(pwd)
 
   cd "$src"
-  git tag > "$output"
+  git tag -l --sort=v:refname > "$output"
   cd "$cwd"
+}
+
+download_case_study() {
+  local url="${__func_args[url]}"
+  local name="${__func_args[name]}"
+  
+  local project_base_dir="$PROJECT_ROOT/case-studies/$name"
+  mkdir -p "$project_base_dir/data"
+  mkdir -p "$project_base_dir/scripts"
+  git clone "$url" "$project_base_dir/code"
 }
 
 sonarqube_analysis() {
   local src="${__func_args[src]}"
-  local tag="${__func_args[tag]}"
+  local version="${__func_args[version]}"
   local key="${__func_args[key]}"
   local url="${__func_args[url]}"
   local token="${__func_args[token]}"
   local ext="${__func_args[ext]}"
 
+  if [ -z "$ext" ]; then
+    ext="$PROJECT_ROOT/tools/bpt/extensions/sonarqube_analysis-generic.sh"
+  fi
+
   local cwd=$(pwd)
   cd "$src"
-  git checkout $tag
-  bash "$ext" "$key" "$src" "$tag" "$url" "$token"
+  git checkout $version
+  bash "$ext" "$key" "$src" "$version" "$url" "$token"
   cd "$cwd"
 }
 

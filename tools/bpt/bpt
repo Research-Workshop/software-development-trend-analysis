@@ -98,7 +98,7 @@ sonarqube_analysis() {
 
   local cwd=$(pwd)
   cd "$src"
-  git checkout $version
+  git checkout --force --detach $version
   bash "$ext" "$key" "$src" "$version" "$url" "$token"
   cd "$cwd"
 }
